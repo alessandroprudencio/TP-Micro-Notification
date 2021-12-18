@@ -3,7 +3,7 @@ import connectRabbitMQ from './rabbitmq';
 
 require('dotenv').config();
 
-const io = new Server(3003);
+const io = new Server(Number(process.env.PORT) || 3003);
 
 const clientsIds: Array<string> = [];
 
