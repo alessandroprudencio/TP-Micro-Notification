@@ -1,14 +1,8 @@
-import { Server, Socket } from 'socket.io';
+import logger from './logger';
 import connectRabbitMQ from './rabbitmq';
 
 require('dotenv').config();
 
-const io = new Server(Number(process.env.PORT) || 3003);
+logger.info('Notifications microservices successfully started !');
 
-const clientsIds: Array<string> = [];
-
-io.on('connection', (socket: Socket) => {
-  clientsIds.push(socket.id);
-
-  connectRabbitMQ(socket, clientsIds);
-});
+connectRabbitMQ();

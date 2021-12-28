@@ -1,31 +1,55 @@
 import * as amqp from 'amqplib';
-import { Socket } from 'socket.io';
+import { ConsumeMessage } from 'amqplib';
+import fetch from 'node-fetch';
+import { INotification } from './interfaces/notification.interface';
+import logger from './logger';
+import { getMessage } from './notifications';
 
-async function connectRabbitMQ(socket: Socket, clientsIds: Array<string>) {
+async function connectRabbitMQ() {
   try {
-    const conn = await amqp.connect(process.env.RABBIT_MQ_CONNECTION);
+    const conn = await amqp.connect({
+      hostname: process.env.RABBIT_MQ_HOST,
+      port: Number(process.env.RABBIT_MQ_PORT),
+      username: process.env.RABBIT_MQ_USERNAME,
+      password: process.env.RABBIT_MQ_PASSWORD,
+      vhost: process.env.RABBIT_MQ_VHOST,
+    });
 
     const ch = await conn.createChannel();
 
-    const queue = process.env.RABBIT_MQ_QUEUE;
-
-    console.log('id connection=>', clientsIds);
+    const queue = 'micro-notification-back';
 
     ch.assertQueue(queue);
 
-    console.log(' [*] Waiting for messages in %s. To exit press CTRL+C', queue);
+    logger.info('Waiting for messages in %s.', queue);
 
-    ch.consume(queue, (msg) => proccessMessage(msg, socket), { noAck: true });
+    ch.consume(queue, (msg: ConsumeMessage | null) => proccessMessage(msg), { noAck: true });
   } catch (error) {
-    throw error;
+    logger.error(error.message);
   }
 }
 
-function proccessMessage(msg: amqp.ConsumeMessage, socket: Socket) {
-  const { pattern, data } = JSON.parse(msg.content.toString());
+async function proccessMessage(msg: ConsumeMessage | null) {
+  try {
+    const { pattern, data } = JSON.parse(msg.content.toString());
 
-  if (pattern && pattern === 'create-notification-challenge') {
-    socket.emit('notification-challenge', data);
+    let message: INotification;
+
+    if (pattern) message = getMessage(data);
+
+    console.log('message=>', message);
+
+    await fetch('https://exp.host/--/api/v2/push/send', {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Accept-encoding': 'gzip, deflate',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(message),
+    });
+  } catch (error) {
+    throw error;
   }
 }
 
