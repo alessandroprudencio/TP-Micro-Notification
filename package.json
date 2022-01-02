@@ -4,7 +4,7 @@
   "main": "src/index.ts",
   "scripts": {
     "build": "tsc",
-    "start:prod": "yarn build && node build/index.js",
+    "start:prod": "node build/index.js",
     "start:dev": "ts-node-dev src/index.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

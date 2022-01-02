@@ -4,8 +4,8 @@ RUN apk add --no-cache bash
 
 WORKDIR /usr/tennis-player/tp-micro-notification
 
-COPY . .
+COPY package*.json ./
 
 RUN yarn
 
-CMD ["yarn", "run", "start:dev"]   
+COPY . .
